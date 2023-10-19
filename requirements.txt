@@ -1,0 +1,4 @@
+langchain==0.0.314
+langsmith==0.0.43
+openai==0.28.1
+python-dotenv==1.0.0
