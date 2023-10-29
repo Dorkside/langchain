@@ -1,6 +1,0 @@
-langchain==0.0.314
-langsmith==0.0.43
-openai==0.28.1
-python-dotenv==1.0.0
-streamlit==1.27.2
-watchdog==3.0.0
