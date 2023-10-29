@@ -74,7 +74,10 @@ if user_input := st.chat_input():
     llm_chain = LLMChain(llm=chat, prompt=prompt, memory=memory)
 
     # Note: new messages are saved to history automatically by Langchain during run
-    response = llm_chain.run(user_input)
+    try:
+        llm_chain.run(user_input)
+    except Exception as e:
+        st.error(e)
 
 # Draw the messages at the end, so newly generated ones show up immediately
 with view_messages:
