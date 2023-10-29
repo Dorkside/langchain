@@ -7,24 +7,27 @@ from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.memory.chat_message_histories import StreamlitChatMessageHistory
 from langchain.prompts import PromptTemplate
 
+import os
 import streamlit as st
+
+
+if "langchain_api_key" in st.secrets:
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
+    os.environ["LANGCHAIN_API_KEY"] = st.secrets.langchain_api_key
+    os.environ["LANGCHAIN_PROJECT"] = "local-chat"
+
+openai_api_key = st.secrets.openai_api_key
 
 st.set_page_config(page_title="Daz", page_icon="📖")
 st.title("📖 Daz")
 
+if 'temperature' not in st.session_state:
+    st.session_state['temperature'] = 0.7
+
 from sidebar import Sidebar
 
 sb = Sidebar()
-
-
-# Get an OpenAI API Key before continuing
-if "openai_api_key" in st.secrets:
-    openai_api_key = st.secrets.openai_api_key
-else:
-    openai_api_key = st.sidebar.text_input("OpenAI API Key", type="password")
-if not openai_api_key:
-    st.info("Enter an OpenAI API Key to continue")
-    st.stop()
 
 # Set up memory
 msgs = StreamlitChatMessageHistory(key="langchain_messages")
@@ -48,7 +51,7 @@ Human: {human_input}
 AI: """
 
 prompt = PromptTemplate(input_variables=["history", "human_input"], template=template)
-chat = ChatOpenAI(openai_api_key=openai_api_key, streaming=True, callbacks=[], temperature=0, model_name="gpt-4")
+chat = ChatOpenAI(openai_api_key=openai_api_key, streaming=True, callbacks=[], temperature=st.session_state.temperature, model_name="gpt-4")
 llm_chain = LLMChain(llm=chat, prompt=prompt, memory=memory)
 
 # Render current messages from StreamlitChatMessageHistory
