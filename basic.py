@@ -6,10 +6,16 @@ from langchain.memory import ConversationBufferMemory
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.memory.chat_message_histories import StreamlitChatMessageHistory
 from langchain.prompts import PromptTemplate
+
 import streamlit as st
 
 st.set_page_config(page_title="Daz", page_icon="📖")
 st.title("📖 Daz")
+
+from sidebar import Sidebar
+
+sb = Sidebar()
+
 
 # Get an OpenAI API Key before continuing
 if "openai_api_key" in st.secrets:
@@ -22,6 +28,7 @@ if not openai_api_key:
 
 # Set up memory
 msgs = StreamlitChatMessageHistory(key="langchain_messages")
+print(msgs)
 memory = ConversationBufferMemory(chat_memory=msgs)
 if len(msgs.messages) == 0:
     msgs.add_ai_message("Please tell me about yourself.")
@@ -43,7 +50,6 @@ AI: """
 prompt = PromptTemplate(input_variables=["history", "human_input"], template=template)
 chat = ChatOpenAI(openai_api_key=openai_api_key, streaming=True, callbacks=[], temperature=0, model_name="gpt-4")
 llm_chain = LLMChain(llm=chat, prompt=prompt, memory=memory)
-
 
 # Render current messages from StreamlitChatMessageHistory
 for msg in msgs.messages:
