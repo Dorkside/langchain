@@ -1,5 +1,6 @@
 from langchain.chains import LLMChain
 from langchain.llms import OpenAI
+from langchain import hub
 from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
@@ -7,22 +8,8 @@ from langchain.memory.chat_message_histories import StreamlitChatMessageHistory
 from langchain.prompts import PromptTemplate
 import streamlit as st
 
-st.set_page_config(page_title="StreamlitChatMessageHistory", page_icon="📖")
-st.title("📖 StreamlitChatMessageHistory")
-
-"""
-# Career agent
-This is a career agent that helps you plan your career.
-"""
-
-
-# Set up memory
-msgs = StreamlitChatMessageHistory(key="langchain_messages")
-memory = ConversationBufferMemory(chat_memory=msgs)
-if len(msgs.messages) == 0:
-    msgs.add_ai_message("Please tell me about yourself.")
-
-view_messages = st.expander("View the message contents in session state")
+st.set_page_config(page_title="Daz", page_icon="📖")
+st.title("📖 Daz")
 
 # Get an OpenAI API Key before continuing
 if "openai_api_key" in st.secrets:
@@ -32,6 +19,35 @@ else:
 if not openai_api_key:
     st.info("Enter an OpenAI API Key to continue")
     st.stop()
+
+# Set up memory
+msgs = StreamlitChatMessageHistory(key="langchain_messages")
+memory = ConversationBufferMemory(chat_memory=msgs)
+if len(msgs.messages) == 0:
+    msgs.add_ai_message("Please tell me about yourself.")
+
+view_messages = st.expander("View the message contents in session state")
+
+# Set up the LLMChain, passing in memory
+template = """
+You are a helpful career planner that tries to help people plan their career.
+
+Your first task is to determine what the person wants to do with their life.
+For this you should ask them specific targetted questions to provide at least 3 options for them to look into.
+Keep asking follow up questions until you are very confident that you have a good idea of what they want to do.
+
+{history}
+Human: {human_input}
+AI: """
+
+prompt = PromptTemplate(input_variables=["history", "human_input"], template=template)
+chat = ChatOpenAI(openai_api_key=openai_api_key, streaming=True, callbacks=[], temperature=0, model_name="gpt-4")
+llm_chain = LLMChain(llm=chat, prompt=prompt, memory=memory)
+
+
+# Render current messages from StreamlitChatMessageHistory
+for msg in msgs.messages:
+    st.chat_message(msg.type).write(msg.content)
 
 class StreamHandler(StreamingStdOutCallbackHandler):
     def __init__(self, container, initial_text="", display_method='markdown'):
@@ -47,31 +63,13 @@ class StreamHandler(StreamingStdOutCallbackHandler):
         else:
             raise ValueError(f"Invalid display_method: {self.display_method}")
 
-# Render current messages from StreamlitChatMessageHistory
-for msg in msgs.messages:
-    st.chat_message(msg.type).write(msg.content)
-
-# Set up the LLMChain, passing in memory
-template = """
-You are a helpful career planner that tries to help people plan their career.
-
-Your first task is to determine what the person wants to do with their life.
-For this you should ask them specific targetted questions to provide at least 3 options for them to look into.
-Keep asking follow up questions until you are very confident that you have a good idea of what they want to do.
-
-{history}
-Human: {human_input}
-AI: """
-
 # If user inputs a new prompt, generate and draw a new response
 if user_input := st.chat_input():
     st.chat_message("human").write(user_input)
     chat_box = st.chat_message("ai").empty()
     stream_handler = StreamHandler(chat_box, display_method='write')
 
-    prompt = PromptTemplate(input_variables=["history", "human_input"], template=template)
-    chat = ChatOpenAI(openai_api_key=openai_api_key, streaming=True, callbacks=[stream_handler], temperature=0, model_name="gpt-4")
-    llm_chain = LLMChain(llm=chat, prompt=prompt, memory=memory)
+    chat.callbacks = [stream_handler]
 
     # Note: new messages are saved to history automatically by Langchain during run
     try:
