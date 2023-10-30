@@ -33,7 +33,7 @@ sb = Sidebar()
 
 # Set up memory
 msgs = StreamlitChatMessageHistory(key="langchain_messages")
-print(msgs)
+
 memory = ConversationBufferMemory(chat_memory=msgs)
 if len(msgs.messages) == 0:
     msgs.add_ai_message("Please tell me about yourself.")

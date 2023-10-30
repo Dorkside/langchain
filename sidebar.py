@@ -3,7 +3,6 @@ from choices import CHOICES
 
 class Sidebar:
     def __init__(self):
-        print(CHOICES)
         with st.sidebar:
             st.subheader("Options")
             st.session_state['temperature'] = st.slider(
