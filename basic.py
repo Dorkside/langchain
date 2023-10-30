@@ -11,6 +11,8 @@ import os
 import streamlit as st
 
 
+from choices import CHOICES
+
 if "langchain_api_key" in st.secrets:
     os.environ["LANGCHAIN_TRACING_V2"] = "true"
     os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
@@ -38,21 +40,13 @@ if len(msgs.messages) == 0:
 
 view_messages = st.expander("View the message contents in session state")
 
-# Set up the LLMChain, passing in memory
-template = """
-You are a helpful career planner that tries to help people plan their career.
-
-Your first task is to determine what the person wants to do with their life.
-For this you should ask them specific targetted questions to provide at least 3 options for them to look into.
-Keep asking follow up questions until you are very confident that you have a good idea of what they want to do.
-
-{history}
-Human: {human_input}
-AI: """
-
-prompt = PromptTemplate(input_variables=["history", "human_input"], template=template)
+if st.session_state.template:
+    prompt = PromptTemplate(input_variables=["history", "human_input"], template=CHOICES[st.session_state.template])
 chat = ChatOpenAI(openai_api_key=openai_api_key, streaming=True, callbacks=[], temperature=st.session_state.temperature, model_name="gpt-4")
-llm_chain = LLMChain(llm=chat, prompt=prompt, memory=memory)
+if prompt is not None:
+    llm_chain = LLMChain(llm=chat, prompt=prompt, memory=memory)
+else:
+    llm_chain = LLMChain(llm=chat, memory=memory)
 
 # Render current messages from StreamlitChatMessageHistory
 for msg in msgs.messages:
